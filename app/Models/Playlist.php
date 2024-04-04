@@ -19,14 +19,22 @@ class Playlist extends Model
         return $this->belongsToMany(Song::class, 'playlist_songs', 'playlist_id', 'song_id')->withPivot(['state', 'order']);
     }
 
+    public function history()
+    {
+        return $this->hasMany(PlaylistHistory::class, 'playlist_id', 'id');
+    }
+
     public function playing()
     {
         $song = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('state', '=', 1)->first();
 
         $nextSong = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('order', '=', $song->pivot->order + 1)->first();
 
+        // get last played song in the history
+        $lastPlayed = $this->history()->latest()->first();
 
-        $prevSong = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('order', '=', $song->pivot->order - 1)->first();
+        //build it as the $prevSong
+        $prevSong = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('song_id', '=', $lastPlayed->song()->first()->id)->first();
 
         return ['song' => $song, 'next' => $nextSong, 'prev' => $prevSong];
     }
@@ -51,7 +59,7 @@ class Playlist extends Model
 
             $nextSong->pivot->state = 1;
             $nextSong->pivot->save();
-        }else{
+        } else {
 
             // if there are no songs in the list go to the first order
 
@@ -60,6 +68,13 @@ class Playlist extends Model
 
             $this->play();
         }
+        // add $nextSong as PlaylistHistory
+
+        $this->history()->create([
+            'playlist_id' => $this->id,
+            'song_id' => $song['song']->pivot->song_id,
+            'status' => 1 //assuming all is skipped
+        ]);
 
         return $song;
     }
@@ -95,6 +110,11 @@ class Playlist extends Model
         $randomSong->pivot->save();
 
         // Save Last Song History here
+        $this->history()->create([
+            'playlist_id' => $this->id,
+            'song_id' => $song['song']->pivot->song_id,
+            'status' => 1 //assuming all is skipped
+        ]);
 
         return $song;
     }

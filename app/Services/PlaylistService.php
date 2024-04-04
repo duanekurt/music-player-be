@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Interfaces\Services\PlaylistServiceInterface;
 use App\Models\Playlist;
+use App\Models\PlaylistHistory;
 use App\Models\PlaylistSong;
 use App\Traits\PlaylistTrait;
 use Illuminate\Http\Request;
