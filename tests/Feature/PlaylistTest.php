@@ -2,13 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\Playlist;
+use App\Models\Song;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 class PlaylistTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithFaker;
     protected $seed = true;
     protected function setUp(): void
     {
@@ -28,15 +30,6 @@ class PlaylistTest extends TestCase
         ]);
 
         return $response->json()['token'];
-    }
-
-    /**
-     * A basic feature test example.
-     */
-    public function test_example(): void
-    {
-        $response = $this->get('/');
-        $response->assertStatus(200);
     }
 
     /**
@@ -79,6 +72,9 @@ class PlaylistTest extends TestCase
         $response->assertStatus(200);
     }
 
+    /**
+     * Test song creation
+     */
     public function test_can_create_song(): void
     {
         $response = $this->json('POST', '/api/v1/songs/create', [
@@ -88,5 +84,59 @@ class PlaylistTest extends TestCase
         ]);
 
         $response->assertStatus(200);
+    }
+
+    /**
+     * Test if the song can be added in the playlist
+     */
+    public function test_can_song_be_added_in_playlist(): void
+    {
+        $playlist = Playlist::create([
+            'playlist_name' => $this->faker()->name,
+            'user_id' => 1
+        ]);
+
+        $sample_song = Song::create([
+            'song_name' => $this->faker()->name,
+            'artist_name' => $this->faker()->name,
+            'song_duration' => '1:23'
+        ]);
+
+        $response = $this->json('PUT', '/api/v1/playlist/add/song/' . $playlist->id . '/' . $sample_song->id);
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'data',
+            'message'
+        ]);
+    }
+
+    /**
+     * Test if the song can be removed in the playlist
+     */
+    public function test_can_song_be_removed_in_playlist(): void
+    {
+        $playlist = Playlist::create([
+            'playlist_name' => $this->faker()->name,
+            'user_id' => 1
+        ]);
+
+        $sample_song = Song::create([
+            'song_name' => $this->faker()->name,
+            'artist_name' => $this->faker()->name,
+            'song_duration' => '1:23'
+        ]);
+
+        //add the song first
+        $this->json('PUT', '/api/v1/playlist/add/song/' . $playlist->id . '/' . $sample_song->id);
+
+        //remove the song
+        $response = $this->json('PUT', '/api/v1/playlist/remove/song/' . $playlist->id . '/' . $sample_song->id);
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'data',
+            'message'
+        ]);
     }
 }
