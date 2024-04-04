@@ -33,19 +33,30 @@ class Playlist extends Model
         // get last played song in the history
         $lastPlayed = $this->history()->latest()->first();
 
+        //check if there is a lastPlayed if none get the last played on the list
+        if (!empty($lastPlayed)) {
+            $prevSong = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('song_id', '=', $lastPlayed->song()->first()->id)->first();
+        }
+
         //build it as the $prevSong
-        $prevSong = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('song_id', '=', $lastPlayed->song()->first()->id)->first();
 
         return ['song' => $song, 'next' => $nextSong, 'prev' => $prevSong];
     }
 
     public function play()
     {
-        $song = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('order', '=', 1)->latest()->first();
-        $song->pivot->state = 1;
-        $song->pivot->save();
+        if (empty($this->playing()['song'])) {
+            $song = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('order', '=', 1)->latest()->first();
+            $song->pivot->state = 1;
+            $song->pivot->save();
 
-        return $song;
+            $this->history()->create([
+                'playlist_id' => $this->id,
+                'song_id' => $song->pivot->song_id,
+                'status' => 1 //assuming all is skipped
+            ]);
+            return $song;
+        }
     }
 
     public function next()
