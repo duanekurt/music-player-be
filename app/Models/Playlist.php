@@ -28,17 +28,24 @@ class Playlist extends Model
     {
         $song = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('state', '=', 1)->first();
 
-        $nextSong = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('order', '=', $song->pivot->order + 1)->first();
+        $nextSong = [];
+        $prevSong = [];
 
-        // get last played song in the history
-        $lastPlayed = $this->history()->latest()->first();
+        // make sure a song is playing
+        if (!empty($song)) {
+            $nextSong = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('order', '=', $song->pivot->order + 1)->first();
 
-        //check if there is a lastPlayed if none get the last played on the list
-        if (!empty($lastPlayed)) {
-            $prevSong = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('song_id', '=', $lastPlayed->song()->first()->id)->first();
+            // get last played song in the history
+            $lastPlayed = $this->history()->latest()->first();
+
+            //check if there is a lastPlayed if none get the last played on the list
+            if (!empty($lastPlayed)) {
+                $prevSong = $this->songs()->wherePivot('playlist_id', '=', $this->id)->wherePivot('song_id', '=', $lastPlayed->song()->first()->id)->first();
+            }
+
+            //build it as the $prevSong
         }
 
-        //build it as the $prevSong
 
         return ['song' => $song, 'next' => $nextSong, 'prev' => $prevSong];
     }

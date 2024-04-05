@@ -39,3 +39,8 @@ Will include the attachment in the email!
 - Song
 - PlaylistSong (Pivot Table)
 - PlaylistHistory
+
+## Testing
+```
+php artisan test
+```
